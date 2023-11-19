@@ -15,7 +15,7 @@ class HomeScreen extends StatelessWidget {
           title: const Text('Videos'),
           actions: [
             IconButton(onPressed: (){}, icon: const Icon(Icons.share)),
-            IconButton(onPressed: (){}, icon: const Icon(Icons.share)),
+            IconButton(onPressed: (){}, icon: const Icon(Icons.star)),
 
           ],
         ),
