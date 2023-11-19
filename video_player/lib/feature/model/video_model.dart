@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-
+import 'package:shared_preferences/shared_preferences.dart';
 class VideoPlaying extends Equatable {
    String apiUrl="https://app.et/devtest/list.json";
 
@@ -20,7 +20,7 @@ VideoPlaying._();
   late String videoUrl;
   late String thumbanail;
   late String description;
-  
+
   VideoPlaying({
     required this.title,
     required this.videoUrl,
@@ -107,5 +107,58 @@ static Future<List<VideoPlaying>>fetchVideoPlayings(String apiUrl) async {
     throw Exception('Error fetching VideoPlayings: $e');
   }
 }
+ static Future<List<VideoPlaying>> saveVideoPlayingsToLocal(List<VideoPlaying> videoPlayings) async {
+  const String apiUrl = "https://app.et/devtest/list.json";
 
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  List<String> videoPlayingsJsonList =
+      videoPlayings.map((videoPlaying) => videoPlaying.toJson()).toList();
+
+  // Save the list of video playings as JSON strings
+   prefs.setStringList('videoPlayings',
+    videoPlayingsJsonList.map((jsonItem) => json.encode(jsonItem)).toList());
+
+
+  final response = await http.get(Uri.parse(apiUrl));
+
+  try {
+    if (response.statusCode == 200) {
+      // If the server returns a 200 OK response, parse the JSON
+      Map<String, dynamic> responseData = json.decode(response.body);
+
+      // Check if the key 'videos' exists in the response
+      if (responseData.containsKey('videos')) {
+        List<dynamic> data = responseData['videos'];
+        List<VideoPlaying> videoPlayings =
+            data.map((videoitem) => VideoPlaying.fromJson(videoitem)).toList();
+          saveVideoPlayingsToLocal(videoPlayings);
+
+        return videoPlayings;
+      }
+    } else {
+      // Handle other HTTP status codes if needed
+      // You can add additional logic here based on your requirements
+    }
+  } catch (e) {
+    throw Exception(e);
+  }
+
+  // Return an empty list if the response doesn't contain 'videos' or if there's an error
+  return [];
+}
+
+
+static Future<List<VideoPlaying>> getVideoPlayingsFromLocal() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  List<String>? videoPlayingsJsonList = prefs.getStringList('videoPlayings');
+
+  if (videoPlayingsJsonList != null) {
+    List<VideoPlaying> videoPlayings = videoPlayingsJsonList
+        .map((jsonItem) => VideoPlaying.fromJson(json.decode(jsonItem)))
+        .toList();
+    return videoPlayings;
+  } else {
+    return [];
+  }
+}
 }
